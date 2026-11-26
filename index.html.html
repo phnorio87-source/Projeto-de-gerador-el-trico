@@ -1,0 +1,767 @@
+<!projeto de mecanica html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gerador de Energia Eólica · Modelo 3D interativo</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cg fill='none' stroke='%23c0830f' stroke-width='1.8' stroke-linecap='round'%3E%3Ccircle cx='12' cy='12' r='1.6'/%3E%3Cpath d='M12 10.4V3.5M13.2 12.8l6 3.4M10.8 12.8l-6 3.4M12.8 10.8l3.4-6M10.8 13.2l-3.4 6'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#eaf2f8; --surface:#fffdf7; --ink:#28231c; --muted:#6f6555;
+    --line:#d9cdb4; --accent:#c0830f; --accent-deep:#94630a; --accent-soft:#f6e6c2;
+    --steel:#33566e; --steel-soft:#e6edf1; --wood:#a97e4e;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--paper);color:var(--ink);
+    font-family:'Archivo',system-ui,-apple-system,'Segoe UI',sans-serif;
+    line-height:1.55;font-size:16px}
+  h1,h2,h3{font-family:'Bricolage Grotesque','Archivo',sans-serif;line-height:1.08;margin:0}
+  p{margin:0}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 20px}
+  .mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+
+  /* ===== Top bar ===== */
+  .topbar{border-bottom:1px solid var(--line);background:var(--paper)}
+  .topbar-in{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 20px;max-width:1180px;margin:0 auto}
+  .brand{display:flex;align-items:center;gap:12px;min-width:0}
+  .brand-mark{flex:0 0 auto;width:38px;height:38px;border-radius:10px;background:var(--ink);display:grid;place-items:center}
+  .brand strong{display:block;font-family:'Bricolage Grotesque';font-weight:700;font-size:16px}
+  .brand span{display:block;font-size:12px;color:var(--muted)}
+  .top-tag{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--steel);background:var(--steel-soft);border:1px solid #cddbe3;padding:6px 10px;border-radius:999px;white-space:nowrap}
+
+  /* ===== Hero ===== */
+  .hero{padding:38px 0 26px}
+  .eyebrow{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--accent-deep);letter-spacing:.02em;margin-bottom:12px}
+  .hero h1{font-size:clamp(30px,4.6vw,52px);font-weight:800;letter-spacing:-.01em;margin-bottom:16px}
+  .lede{max-width:640px;color:var(--muted);font-size:17px}
+  .chips{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+  .chip{font-family:'IBM Plex Mono',monospace;font-size:12.5px;background:var(--surface);border:1px solid var(--line);padding:7px 12px;border-radius:999px;color:var(--ink)}
+
+  .hero-grid{display:grid;grid-template-columns:1fr 320px;gap:18px;margin-top:26px;align-items:stretch}
+  .scene-card{position:relative;border:1px solid var(--line);border-radius:16px;overflow:hidden;background:#e7ddc9;min-width:0}
+  #scene-wrap{
+    position:relative;
+    height:clamp(380px,56vh,560px)
+}
+  #scene{display:block;width:100%;height:100%}
+  .scene-hint{position:absolute;top:12px;left:12px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#f4ecd9;background:rgba(40,35,28,.72);padding:7px 11px;border-radius:999px;pointer-events:none}
+  .panel{
+    position:absolute;
+    left:12px;
+    bottom:12px;
+    width:260px;
+    max-width:calc(100% - 24px);
+    background:rgba(38,34,28,.86);
+    color:#f2ecdf;
+    border-radius:12px;
+    padding:9px 11px;
+    backdrop-filter:blur(6px);
+}
+  .panel-row{display:flex;gap:10px;flex-wrap:wrap}
+  .btn-primary{background:var(--accent);color:#fff;border:0;border-radius:10px;padding:10px 16px;font:600 14px 'Archivo',sans-serif;cursor:pointer}
+  .btn-primary[aria-pressed="true"]{background:var(--accent-deep)}
+  .btn-ghost{background:transparent;color:#f2ecdf;border:1px solid rgba(242,236,223,.4);border-radius:10px;padding:10px 14px;font:500 13px 'Archivo',sans-serif;cursor:pointer}
+  .slider-row{display:block;margin-top:12px;font-size:12.5px;color:#e6dcc6}
+  .slider-row span{display:block;margin-bottom:6px}
+  .slider-row input[type=range]{width:100%;accent-color:var(--accent)}
+  .check-row{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:13px;color:#e6dcc6;cursor:pointer}
+  .check-row input{accent-color:var(--accent)}
+  #fallback{position:absolute;inset:0;display:none;padding:24px;overflow:auto}
+  #fallback[hidden]{display:none}
+  .scene-card.webgl-fail #fallback{display:block}
+  .scene-card.webgl-fail #scene{display:none}
+  .scene-card.webgl-fail .panel, .scene-card.webgl-fail .scene-hint{display:none}
+
+  .steps{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px;min-width:0}
+  .steps h2{font-size:19px;margin-bottom:14px}
+  .steps ol{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:14px}
+  .steps li{display:grid;grid-template-columns:34px 1fr;gap:12px;align-items:start}
+  .step-num{width:30px;height:30px;border-radius:9px;background:var(--accent-soft);color:var(--accent-deep);font-family:'IBM Plex Mono',monospace;font-weight:500;display:grid;place-items:center;font-size:14px}
+  .steps li strong{display:block;font-size:14.5px}
+  .steps li span{font-size:13px;color:var(--muted)}
+  .state-box{margin-top:18px;border-top:1px solid var(--line);padding-top:14px;display:grid;gap:8px}
+  .state-item{display:flex;justify-content:space-between;gap:12px;font-family:'IBM Plex Mono',monospace;font-size:13px}
+  .state-item .k{color:var(--muted);min-width:0}
+  .state-item .v{font-weight:500;white-space:nowrap;text-align:right}
+  .lede{overflow-wrap:break-word}
+
+  /* ===== Sections ===== */
+  .section{padding:34px 0 8px}
+  .section h2{font-size:clamp(22px,2.6vw,30px);font-weight:700;margin-bottom:18px}
+  .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;min-width:0}
+  .card svg{width:28px;height:28px;color:var(--steel);margin-bottom:10px}
+  .card h3{font-size:16px;margin-bottom:6px}
+  .card p{font-size:13.5px;color:var(--muted)}
+
+  .gallery{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  figure{margin:0}
+  figure img{width:100%;display:block;border-radius:14px;border:1px solid var(--line);object-fit:cover;background:#e7ddc9}
+  .fig-photo1{aspect-ratio:3/4}
+  .fig-photo2{aspect-ratio:16/9}
+  figcaption{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted);margin-top:8px;line-height:1.5}
+
+  .how-grid{display:grid;grid-template-columns:1.5fr 1fr;gap:18px;align-items:start}
+  .how-steps{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:14px}
+  .how-steps li{display:grid;grid-template-columns:34px 1fr;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;min-width:0}
+  .how-steps strong{display:block;margin-bottom:3px;font-size:15px}
+  .how-steps p{font-size:13.5px;color:var(--muted)}
+  .note{background:var(--steel-soft);border:1px solid #cddbe3;border-radius:14px;padding:18px}
+  .note h3{font-size:15px;color:var(--steel);margin-bottom:8px}
+  .note p{font-size:13.5px;color:#33475a}
+
+  footer{padding:34px 0 44px;margin-top:26px;border-top:1px solid var(--line)}
+  footer p{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted);max-width:720px}
+
+  /* ===== Responsive ===== */
+  @media (max-width:900px){
+    .hero-grid{grid-template-columns:1fr}
+    .cards{grid-template-columns:repeat(2,1fr)}
+    .how-grid{grid-template-columns:1fr}
+  }
+  @media (max-width:600px){
+    .cards{grid-template-columns:1fr}
+    .gallery{grid-template-columns:1fr}
+    .top-tag{display:none}
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-in">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f6e6c2" stroke-width="1.8" stroke-linecap="round">
+          <circle cx="12" cy="12" r="1.6"/>
+          <path d="M12 10.4V3.5M13.2 12.8l6 3.4M10.8 12.8l-6 3.4M12.8 10.8l3.4-6M10.8 13.2l-3.4 6"/>
+        </svg>
+      </div>
+      <div>
+        <strong>Gerador de Energia Eólica</strong>
+        <span>Projeto de ciências · modelo 3D interativo</span>
+      </div>
+    </div>
+    <span class="top-tag">Arraste para girar em 3D</span>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <section class="hero">
+    <p class="eyebrow">Conversão de energia mecânica em energia elétrica</p>
+    <h1>Gerador de Energia<br>Eólica, visto em 3D</h1>
+    <p class="lede">As pás do ventilador giram, o motor funciona como gerador e a lâmpada se acende: assim o projeto transforma o movimento em eletricidade. Arraste o modelo abaixo para examiná-lo de todos os ângulos.</p>
+    <div class="chips">
+      <span class="chip">Movimento → eletricidade → luz</span>
+      <span class="chip">Ventilador automotivo como gerador</span>
+      <span class="chip">4 etapas no caminho da energia</span>
+      <span class="chip">Vista 360° arrastando o modelo</span>
+    </div>
+
+    <div class="hero-grid">
+      <div class="scene-card" id="sceneCard">
+        <div id="scene-wrap">
+          <canvas id="scene" aria-label="Modelo 3D do gerador de energia eólica"></canvas>
+          <div class="scene-hint">Arraste para girar · roda ou pinça aproxima</div>
+          <div class="panel" role="group" aria-label="Controles do modelo 3D">
+            <div class="panel-row">
+              <button id="btnToggle" class="btn-primary" type="button" aria-pressed="true">Parar giro</button>
+              <button id="btnReset" class="btn-ghost" type="button">Resetar vista</button>
+            </div>
+            <label class="slider-row">
+              <span>Velocidade da rotação</span>
+              <input id="speed" type="range" min="0" max="100" value="55" aria-label="Velocidade da rotação">
+            </label>
+            <label class="check-row">
+              <input id="autoRotate" type="checkbox">
+              Giro automático da câmera
+            </label>
+          </div>
+          <div id="fallback">
+            <p class="mono" style="margin-bottom:12px;color:var(--muted)">O navegador não carregou o WebGL; veja o diagrama do projeto:</p>
+            <img src="https://media.doubao.com/space/api/box/stream/download/all_by_mount_point/X3LrbWY8SomrhCxJtN5ljg25gnf" alt="Diagrama do gerador de energia eólica" style="width:100%;border-radius:12px">
+          </div>
+        </div>
+      </div>
+
+      <aside class="steps" aria-label="O caminho da energia">
+        <h2>O caminho da energia</h2>
+        <ol>
+          <li>
+            <span class="step-num">1</span>
+            <div><strong>Furadeira com roldana</strong><span>Gira a roldana; a correia transmite essa rotação até o ventilador.</span></div>
+          </li>
+          <li>
+            <span class="step-num">2</span>
+            <div><strong>Ventilador automotivo</strong><span>A correia gira sua roldana e o motor, que neste projeto funciona como gerador.</span></div>
+          </li>
+          <li>
+            <span class="step-num">3</span>
+            <div><strong>Fios elétricos</strong><span>Conduzem a energia elétrica gerada até a lâmpada.</span></div>
+          </li>
+          <li>
+            <span class="step-num">4</span>
+            <div><strong>Lâmpada acesa</strong><span>Transforma a energia elétrica em luz.</span></div>
+          </li>
+        </ol>
+        <div class="state-box">
+          <div class="state-item"><span class="k">Lâmpada</span><span class="v" id="stLamp">Apagada</span></div>
+          <div class="state-item"><span class="k">Rotação</span><span class="v" id="stRpm">0 rpm</span></div>
+          <div class="state-item"><span class="k">Geração</span><span class="v" id="stPower">0%</span></div>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <section class="section" id="componentes">
+    <h2>Componentes do projeto</h2>
+    <div class="cards">
+      <article class="card">
+        <h3>Furadeira</h3>
+        <p>No protótipo de bancada, a furadeira faz o papel do vento: uma roldana na saída da furadeira transmite o giro por uma correia até o ventilador.</p>
+      </article>
+      <article class="card">
+        <h3>Ventilador automotivo</h3>
+        <p>Pás e motor de um ventilador de carro reaproveitados. A correia da furadeira gira a roldana; ao girar, o motor atua como gerador de eletricidade.</p>
+      </article>
+      <article class="card">
+        <h3>Estrutura de madeira</h3>
+        <p>Dois suportes de madeira fixados na base mantêm o alinhamento entre a furadeira, o ventilador e os fios.</p>
+      </article>
+      <article class="card">
+        <h3>Fios elétricos</h3>
+        <p>Dois fios, um vermelho e um preto, levam a corrente do gerador até o soquete da lâmpada.</p>
+      </article>
+      <article class="card">
+        <h3>Lâmpada</h3>
+        <p>Quando a energia gerada chega pelo fio, o bulbo brilha: é o sinal de que a eletricidade foi produzida.</p>
+      </article>
+      <article class="card">
+        <h3>Energia em movimento</h3>
+        <p>Rotação rápida gera mais luz; no modelo 3D o brilho da lâmpada acompanha a velocidade das pás.</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="section" id="fotos">
+    <h2>Fotos do projeto</h2>
+    <div class="gallery">
+      <figure>
+        <img class="fig-photo1" src="https://media.doubao.com/space/api/box/stream/download/all_by_mount_point/AlUdbSXe9o2LcxxTUjblHoiXgwc" alt="Foto do protótipo na bancada com ventilador, furadeira e fios" loading="lazy">
+        <figcaption>Foto 1 · Protótipo na bancada: ventilador automotivo preso aos suportes de madeira, com a furadeira e os fios.</figcaption>
+      </figure>
+      <figure>
+        <img class="fig-photo2" src="https://media.doubao.com/space/api/box/stream/download/all_by_mount_point/X3LrbWY8SomrhCxJtN5ljg25gnf" alt="Diagrama ilustrando o caminho da energia da furadeira até a lâmpada" loading="lazy">
+        <figcaption>Foto 2 · Diagrama do projeto: o caminho da energia, da furadeira à lâmpada acesa.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="section" id="como-funciona">
+    <h2>Como funciona</h2>
+    <div class="how-grid">
+      <ol class="how-steps">
+        <li>
+          <span class="step-num">A</span>
+          <div><strong>O movimento entra no eixo</strong><p>A furadeira gira a roldana, e a correia leva esse giro à roldana do ventilador. Em um gerador eólico real, quem empurra as pás é o vento.</p></div>
+        </li>
+        <li>
+          <span class="step-num">B</span>
+          <div><strong>O motor vira gerador</strong><p>No interior do motor, ímãs e bobinas em movimento relativo induzem uma tensão elétrica nos fios.</p></div>
+        </li>
+        <li>
+          <span class="step-num">C</span>
+          <div><strong>A luz acende</strong><p>A corrente percorre os fios até a lâmpada, que converte energia elétrica em luz e calor.</p></div>
+        </li>
+      </ol>
+      <aside class="note">
+        <h3>Observação importante</h3>
+        <p>Este é um protótipo didático de bancada: a furadeira fornece a rotação que no campo seria fornecida pelo vento. A transformação de energia é a mesma — movimento mecânico em eletricidade, depois em luz.</p>
+      </aside>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>Modelo 3D ilustrativo, construído a partir das fotos enviadas a uma inteligencia artificial IA ; as peças e dimensões são aproximadas. Arraste a cena para girar o modelo e use o controle de velocidade para acender a lâmpada, feito com o intuito de dar um pouco de interatividade a pessoa que esta visitando o site.</p>
+  </div>
+</footer>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://fastly.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://fastly.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+/* ---------- Elementos da página ---------- */
+const wrap = document.getElementById('scene-wrap');
+const canvas = document.getElementById('scene');
+const sceneCard = document.getElementById('sceneCard');
+const fallback = document.getElementById('fallback');
+
+/* ---------- Renderizador com fallback ---------- */
+let renderer;
+try {
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+} catch (err) {
+  sceneCard.classList.add('webgl-fail');
+  throw err;
+}
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.8));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+
+/* ---------- Cena, câmera, ambiente ---------- */
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xe9e1d1);
+scene.fog = new THREE.Fog(0xe9e1d1, 9, 17);
+
+const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 60);
+const CAM0 = new THREE.Vector3(4.3, 2.8, 5.3);
+const TGT0 = new THREE.Vector3(0, 1.12, 0);
+camera.position.copy(CAM0);
+
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(renderer), 0.04).texture;
+
+/* ---------- Luzes: chave, preenchimento, contorno ---------- */
+scene.add(new THREE.HemisphereLight(0xfff6e6, 0x8a7a60, 0.55));
+const key = new THREE.DirectionalLight(0xfff1d8, 2.4);
+key.position.set(3.6, 5.2, 3.2);
+key.castShadow = true;
+key.shadow.mapSize.set(1024, 1024);
+key.shadow.camera.left = -4; key.shadow.camera.right = 4;
+key.shadow.camera.top = 4; key.shadow.camera.bottom = -4;
+key.shadow.camera.near = 1; key.shadow.camera.far = 14;
+key.shadow.bias = -0.0004;
+scene.add(key);
+const fill = new THREE.DirectionalLight(0xbfd4e6, 0.55);
+fill.position.set(-4, 2.2, -1.5);
+scene.add(fill);
+const rim = new THREE.DirectionalLight(0xffe2b0, 0.9);
+rim.position.set(-1.5, 3.4, -4.2);
+scene.add(rim);
+
+/* ---------- Piso com sombra de contato ---------- */
+const ground = new THREE.Mesh(
+  new THREE.CircleGeometry(8, 48),
+  new THREE.ShadowMaterial({ opacity: 0.16 })
+);
+ground.rotation.x = -Math.PI / 2;
+ground.receiveShadow = true;
+scene.add(ground);
+
+/* ---------- Textura procedural de madeira ---------- */
+function makeWoodTexture(base, line) {
+  const c = document.createElement('canvas');
+  c.width = 512; c.height = 256;
+  const g = c.getContext('2d');
+  g.fillStyle = base; g.fillRect(0, 0, 512, 256);
+  for (let i = 0; i < 70; i++) {
+    g.strokeStyle = line.replace('ALPHA', (0.05 + Math.random() * 0.13).toFixed(2));
+    g.lineWidth = 1 + Math.random() * 2.2;
+    const y = Math.random() * 256;
+    g.beginPath(); g.moveTo(0, y);
+    for (let x = 0; x <= 512; x += 32) g.lineTo(x, y + Math.sin(x * 0.02 + i) * 3);
+    g.stroke();
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+const woodTex = makeWoodTexture('#b08a58', 'rgba(90,60,30,ALPHA)');
+woodTex.repeat.set(2, 1);
+const woodDarkTex = makeWoodTexture('#96703f', 'rgba(70,45,22,ALPHA)');
+woodDarkTex.repeat.set(1, 2);
+
+/* ---------- Materiais ---------- */
+const woodMat = new THREE.MeshStandardMaterial({ map: woodTex, roughness: 0.85, metalness: 0 });
+const woodDarkMat = new THREE.MeshStandardMaterial({ map: woodDarkTex, roughness: 0.88, metalness: 0 });
+const blackPlastic = new THREE.MeshStandardMaterial({ color: 0x232326, roughness: 0.72, metalness: 0.05 });
+const metal = new THREE.MeshStandardMaterial({ color: 0x9aa0a6, roughness: 0.35, metalness: 0.85 });
+const darkMetal = new THREE.MeshStandardMaterial({ color: 0x55585c, roughness: 0.45, metalness: 0.8 });
+const redPlastic = new THREE.MeshStandardMaterial({ color: 0xb02a22, roughness: 0.5, metalness: 0.05 });
+
+const model = new THREE.Group();
+scene.add(model);
+
+/* ---------- Base de madeira ---------- */
+const board = new THREE.Mesh(new THREE.BoxGeometry(3.6, 0.14, 2.0), woodMat);
+board.position.y = 0.07;
+board.castShadow = board.receiveShadow = true;
+model.add(board);
+
+/* ---------- Suportes de madeira ---------- */
+function post(x, z, ry) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(0.16, 1.42, 0.16), woodDarkMat);
+  m.position.set(x, 0.14 + 0.71, z);
+  m.rotation.y = ry || 0;
+  m.castShadow = m.receiveShadow = true;
+  model.add(m);
+  const bolt = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.02, 12), metal);
+  bolt.rotation.x = Math.PI / 2;
+  bolt.position.set(x, 1.18, z + 0.09);
+  model.add(bolt);
+}
+post(-0.20, 0.16, 0.04);
+post(0.24, 0.16, -0.03);
+
+/* ---------- Conjunto do ventilador (motor como gerador) ---------- */
+const fan = new THREE.Group();
+fan.position.set(0.02, 1.55, 0.10);
+model.add(fan);
+
+const shroud = new THREE.Mesh(new THREE.TorusGeometry(0.92, 0.055, 14, 72), blackPlastic);
+shroud.castShadow = true;
+fan.add(shroud);
+
+const motor = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.27, 0.34, 28), darkMetal);
+motor.rotation.x = Math.PI / 2;
+motor.castShadow = true;
+fan.add(motor);
+
+const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.235, 0.235, 0.05, 28), metal);
+cap.rotation.x = Math.PI / 2;
+cap.position.z = 0.18;
+fan.add(cap);
+
+const holeGeo = new THREE.CylinderGeometry(0.014, 0.014, 0.052, 8);
+for (let i = 0; i < 8; i++) {
+  const a = (i / 8) * Math.PI * 2;
+  const h = new THREE.Mesh(holeGeo, blackPlastic);
+  h.rotation.x = Math.PI / 2;
+  h.position.set(Math.cos(a) * 0.145, Math.sin(a) * 0.145, 0.18);
+  fan.add(h);
+}
+const axle = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.1, 16), metal);
+axle.rotation.x = Math.PI / 2;
+axle.position.z = 0.23;
+fan.add(axle);
+
+const bracket = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.06, 0.06), darkMetal);
+bracket.position.set(0, -0.28, -0.18);
+fan.add(bracket);
+
+const rearShaft = new THREE.Mesh(new THREE.CylinderGeometry(0.032, 0.032, 0.34, 12), darkMetal);
+rearShaft.rotation.x = Math.PI / 2;
+rearShaft.position.z = -0.30;
+fan.add(rearShaft);
+const coupler = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.055, 0.08, 12), blackPlastic);
+coupler.rotation.x = Math.PI / 2;
+coupler.position.z = -0.16;
+fan.add(coupler);
+
+/* Rotor: pás + cubo, gira no eixo Z */
+const rotor = new THREE.Group();
+rotor.position.z = 0.24;
+fan.add(rotor);
+
+const bladeShape = new THREE.Shape();
+bladeShape.moveTo(0.18, -0.05);
+bladeShape.quadraticCurveTo(0.55, -0.16, 0.86, -0.06);
+bladeShape.quadraticCurveTo(0.95, 0.02, 0.82, 0.10);
+bladeShape.quadraticCurveTo(0.5, 0.14, 0.2, 0.07);
+bladeShape.closePath();
+const bladeGeo = new THREE.ExtrudeGeometry(bladeShape, {
+  depth: 0.018, bevelEnabled: true, bevelThickness: 0.006, bevelSize: 0.006, bevelSegments: 1
+});
+for (let i = 0; i < 7; i++) {
+  const holder = new THREE.Group();
+  holder.rotation.z = (i / 7) * Math.PI * 2;
+  const b = new THREE.Mesh(bladeGeo, blackPlastic);
+  b.rotation.x = 0.38;
+  b.position.z = -0.02;
+  b.castShadow = true;
+  holder.add(b);
+  rotor.add(holder);
+}
+const hub = new THREE.Mesh(new THREE.SphereGeometry(0.075, 16, 12), darkMetal);
+rotor.add(hub);
+
+/* Roldana do ventilador, concêntrica ao eixo e girando com o rotor */
+const fanPulley = makePulley(0.30, 0.10);
+fanPulley.position.set(0, 0, 0.21);
+rotor.add(fanPulley);
+
+/* ---------- Roldana (polia) reutilizável, eixo no eixo local Z ---------- */
+function makePulley(radius, width) {
+  const g = new THREE.Group();
+  const core = new THREE.Mesh(new THREE.CylinderGeometry(radius, radius, width * 0.55, 32), darkMetal);
+  core.rotation.x = Math.PI / 2;
+  g.add(core);
+  const flangeGeo = new THREE.CylinderGeometry(radius * 1.14, radius * 1.14, width * 0.18, 32);
+  const f1 = new THREE.Mesh(flangeGeo, metal);
+  f1.rotation.x = Math.PI / 2;
+  f1.position.z = width * 0.32;
+  g.add(f1);
+  const f2 = f1.clone();
+  f2.position.z = -width * 0.32;
+  g.add(f2);
+  const hub = new THREE.Mesh(new THREE.CylinderGeometry(radius * 0.28, radius * 0.28, width * 1.5, 16), darkMetal);
+  hub.rotation.x = Math.PI / 2;
+  g.add(hub);
+  const groove = new THREE.Mesh(new THREE.TorusGeometry(radius * 0.92, width * 0.16, 10, 40), blackPlastic);
+  g.add(groove);
+  g.traverse(o => { if (o.isMesh) o.castShadow = true; });
+  return g;
+}
+
+/* ---------- Furadeira com roldana (sem broca) ---------- */
+const drill = new THREE.Group();
+drill.position.set(-1.10, 0.66, -0.05);
+drill.rotation.y = -Math.PI / 2;
+drill.rotation.z = 0.10;
+model.add(drill);
+
+const drillStand = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.16, 0.36), woodDarkMat);
+drillStand.position.set(-1.10, 0.22, -0.05);
+drillStand.castShadow = drillStand.receiveShadow = true;
+model.add(drillStand);
+
+const dBody = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.2, 0.22), redPlastic);
+dBody.castShadow = true;
+drill.add(dBody);
+const dRear = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.18, 0.2), blackPlastic);
+dRear.position.x = -0.28;
+drill.add(dRear);
+const dGear = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.17, 0.18), blackPlastic);
+dGear.position.x = 0.30;
+drill.add(dGear);
+const dChuck = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.055, 0.16, 14), metal);
+dChuck.rotation.z = Math.PI / 2;
+dChuck.position.x = 0.44;
+drill.add(dChuck);
+const dHandle = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.3, 0.17), blackPlastic);
+dHandle.rotation.z = -0.30;
+dHandle.position.set(-0.02, -0.24, 0);
+drill.add(dHandle);
+const dBattery = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.1, 0.22), blackPlastic);
+dBattery.position.set(-0.06, -0.42, 0);
+dBattery.castShadow = true;
+drill.add(dBattery);
+const dTrigger = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.08, 0.1), redPlastic);
+dTrigger.position.set(0.06, -0.18, 0);
+drill.add(dTrigger);
+
+/* Eixo curto da furadeira ligado à roldana (não há broca) */
+const dAxle = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.22, 12), metal);
+dAxle.rotation.z = Math.PI / 2;
+dAxle.position.x = 0.52;
+drill.add(dAxle);
+
+const drillPulley = new THREE.Group();
+drillPulley.position.set(0.60, 0, 0);
+drillPulley.rotation.y = Math.PI / 2;
+drill.add(drillPulley);
+drillPulley.add(makePulley(0.17, 0.07));
+
+/* ---------- Fios elétricos ---------- */
+function wire(points, color) {
+  const curve = new THREE.CatmullRomCurve3(points.map(p => new THREE.Vector3(...p)));
+  const geo = new THREE.TubeGeometry(curve, 40, 0.013, 8, false);
+  const m = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color, roughness: 0.5, metalness: 0.05 }));
+  m.castShadow = true;
+  model.add(m);
+}
+wire([[-0.10, 1.34, 0.22], [-0.42, 0.95, 0.55], [0.42, 0.34, 0.82], [1.16, 0.24, 0.62]], 0xb02018);
+wire([[0.08, 1.32, 0.24], [0.34, 0.9, 0.70], [0.78, 0.32, 0.90], [1.30, 0.24, 0.56]], 0x1d1d1f);
+
+/* ---------- Lâmpada ---------- */
+const lamp = new THREE.Group();
+lamp.position.set(1.28, 0.14, 0.56);
+model.add(lamp);
+
+const socket = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.095, 0.12, 18), blackPlastic);
+socket.position.y = 0.06;
+socket.castShadow = true;
+lamp.add(socket);
+
+const bulbMat = new THREE.MeshStandardMaterial({
+  color: 0xf3e3b8, roughness: 0.25, metalness: 0,
+  emissive: new THREE.Color(0xffc873), emissiveIntensity: 0
+});
+const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.105, 24, 18), bulbMat);
+bulb.scale.y = 1.15;
+bulb.position.y = 0.24;
+bulb.castShadow = true;
+lamp.add(bulb);
+
+function glowTexture() {
+  const c = document.createElement('canvas');
+  c.width = c.height = 128;
+  const g = c.getContext('2d');
+  const gr = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+  gr.addColorStop(0, 'rgba(255,214,140,0.9)');
+  gr.addColorStop(0.4, 'rgba(255,190,110,0.35)');
+  gr.addColorStop(1, 'rgba(255,190,110,0)');
+  g.fillStyle = gr; g.fillRect(0, 0, 128, 128);
+  return new THREE.CanvasTexture(c);
+}
+const glow = new THREE.Sprite(new THREE.SpriteMaterial({
+  map: glowTexture(), transparent: true, opacity: 0,
+  blending: THREE.AdditiveBlending, depthWrite: false
+}));
+glow.position.y = 0.24;
+glow.scale.set(0.85, 0.85, 1);
+lamp.add(glow);
+
+const bulbLight = new THREE.PointLight(0xffc873, 0, 3.2, 2);
+bulbLight.position.y = 0.28;
+lamp.add(bulbLight);
+
+/* ---------- Correia (transmissão por roldanas) ---------- */
+function beltLoop(cA, rA, cB, rB, z) {
+  const dx = cB.x - cA.x, dy = cB.y - cA.y;
+  const d = Math.hypot(dx, dy);
+  const ux = dx / d, uy = dy / d;
+  const nx = -uy, ny = ux;
+  const cosA = (rB - rA) / d;
+  const sinA = Math.sqrt(Math.max(0, 1 - cosA * cosA));
+  const m1 = { x: -cosA * ux + sinA * nx, y: -cosA * uy + sinA * ny };
+  const m2 = { x: -cosA * ux - sinA * nx, y: -cosA * uy - sinA * ny };
+  const B1 = { x: cB.x + rB * m1.x, y: cB.y + rB * m1.y };
+  const B2 = { x: cB.x + rB * m2.x, y: cB.y + rB * m2.y };
+  const A1 = { x: cA.x + rA * m1.x, y: cA.y + rA * m1.y };
+  const A2 = { x: cA.x + rA * m2.x, y: cA.y + rA * m2.y };
+  const pts = [];
+  const push = p => pts.push(new THREE.Vector3(p.x, p.y, z));
+  // Arco da roldana maior no lado afastado da menor
+  const a1 = Math.atan2(B1.y - cB.y, B1.x - cB.x);
+  const a2 = Math.atan2(B2.y - cB.y, B2.x - cB.x);
+  let sweep = a2 - a1;
+  while (sweep > Math.PI) sweep -= Math.PI * 2;
+  while (sweep < -Math.PI) sweep += Math.PI * 2;
+  const midA = a1 + sweep / 2;
+  const mx = cB.x + Math.cos(midA) * rB, my = cB.y + Math.sin(midA) * rB;
+  if (((mx - cA.x) * ux + (my - cA.y) * uy) > 0) sweep = -sweep;
+  const NB = 24;
+  for (let i = 0; i <= NB; i++) {
+    const a = a1 + sweep * i / NB;
+    push({ x: cB.x + Math.cos(a) * rB, y: cB.y + Math.sin(a) * rB });
+  }
+  // Arco da roldana menor no lado afastado da maior
+  const b1 = Math.atan2(A2.y - cA.y, A2.x - cA.x);
+  const b2 = Math.atan2(A1.y - cA.y, A1.x - cA.x);
+  let swA = b2 - b1;
+  while (swA > Math.PI) swA -= Math.PI * 2;
+  while (swA < -Math.PI) swA += Math.PI * 2;
+  const midB = b1 + swA / 2;
+  const mx2 = cA.x + Math.cos(midB) * rA, my2 = cA.y + Math.sin(midB) * rA;
+  if (((mx2 - cB.x) * (-ux) + (my2 - cB.y) * (-uy)) > 0) swA = -swA;
+  const NA = 14;
+  for (let i = 0; i <= NA; i++) {
+    const a = b1 + swA * i / NA;
+    push({ x: cA.x + Math.cos(a) * rA, y: cA.y + Math.sin(a) * rA });
+  }
+  const curve = new THREE.CatmullRomCurve3(pts, true, 'centripetal', 0.5);
+  const geo = new THREE.TubeGeometry(curve, 150, 0.016, 8, true);
+  const belt = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: 0x2c2620, roughness: 0.85, metalness: 0.05 }));
+  belt.castShadow = true;
+  model.add(belt);
+}
+beltLoop({ x: -1.10, y: 0.72 }, 0.17, { x: 0.02, y: 1.55 }, 0.30, 0.55);
+
+/* ---------- Controles de câmera (vista de todos os ângulos) ---------- */
+const controls = new OrbitControls(camera, canvas);
+controls.target.copy(TGT0);
+controls.enableDamping = true;
+controls.dampingFactor = 0.06;
+controls.enablePan = false;
+controls.minDistance = 2.3;
+controls.maxDistance = 8;
+controls.minPolarAngle = 0.28;
+controls.maxPolarAngle = 1.45;
+controls.autoRotateSpeed = 1.6;
+
+/* ---------- Estado da simulação ---------- */
+const btnToggle = document.getElementById('btnToggle');
+const btnReset = document.getElementById('btnReset');
+const speedSlider = document.getElementById('speed');
+const autoChk = document.getElementById('autoRotate');
+const stLamp = document.getElementById('stLamp');
+const stRpm = document.getElementById('stRpm');
+const stPower = document.getElementById('stPower');
+
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+let running = !reduceMotion;
+let speed = running ? 0.55 : 0;
+let power = 0;
+
+function syncToggle() {
+  btnToggle.textContent = running ? 'Parar giro' : 'Ligar giro';
+  btnToggle.setAttribute('aria-pressed', String(running));
+}
+btnToggle.addEventListener('click', () => { running = !running; syncToggle(); });
+autoChk.addEventListener('change', () => { controls.autoRotate = autoChk.checked; });
+btnReset.addEventListener('click', () => {
+  camera.position.copy(CAM0);
+  controls.target.copy(TGT0);
+});
+syncToggle();
+
+/* ---------- Loop de animação ---------- */
+const clock = new THREE.Clock();
+let visible = true;
+document.addEventListener('visibilitychange', () => {
+  visible = !document.hidden;
+  if (visible) clock.getDelta();
+});
+
+function animate() {
+  requestAnimationFrame(animate);
+  if (!visible) return;
+  const dt = Math.min(clock.getDelta(), 0.05);
+
+  const targetSpeed = running ? Number(speedSlider.value) / 100 : 0;
+  speed += (targetSpeed - speed) * Math.min(1, dt * 3.5);
+
+  rotor.rotation.z -= speed * Math.PI * 2 * 1.6 * dt;
+  drillPulley.rotation.x -= speed * Math.PI * 2 * 1.6 * dt;
+  drill.position.y = 0.66 + (speed > 0.05 ? Math.sin(performance.now() * 0.05) * 0.004 * speed : 0);
+
+  const p = THREE.MathUtils.clamp((speed - 0.12) / 0.42, 0, 1);
+  power += (p - power) * Math.min(1, dt * 5);
+
+  bulbMat.emissiveIntensity = power * 1.7;
+  bulbLight.intensity = power * 7;
+  glow.material.opacity = power * 0.85;
+
+  stLamp.textContent = power > 0.15 ? 'Acesa' : 'Apagada';
+  stLamp.style.color = power > 0.15 ? '#94630a' : '#6f6555';
+  stRpm.textContent = Math.round(speed * 160) + ' rpm';
+  stPower.textContent = Math.round(power * 100) + '%';
+
+  controls.update();
+  renderer.render(scene, camera);
+}
+
+/* ---------- Responsividade do canvas ---------- */
+function resize() {
+  const w = wrap.clientWidth, h = wrap.clientHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+}
+new ResizeObserver(resize).observe(wrap);
+resize();
+animate();
+</script>
+</body>
+</html>
